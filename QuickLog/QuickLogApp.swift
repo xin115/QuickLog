@@ -109,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let target = windowTargetFrame, let hidden = windowHiddenFrame else { return }
 
         // Borderless "drawer" panel (Unclutter-like)
-        let panel = NSPanel(
+        let panel = QuickLogPanel(
             contentRect: hidden,
             styleMask: [.borderless, .resizable, .fullSizeContentView],
             backing: .buffered,
@@ -220,8 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Start from hidden (above top edge) each time, like Unclutter.
         window.setFrame(hidden, display: false)
         window.alphaValue = 0
-        window.orderFrontRegardless()
-        window.makeKey()
+        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
         NSAnimationContext.runAnimationGroup { ctx in
