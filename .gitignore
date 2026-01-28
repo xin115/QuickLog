@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+/tmp/
+*.xcuserstate
+*.xccheckout
+*.xcodeproj/
+# local logs
+logs/
+# generated automation artifacts
+/tools/*.app/
