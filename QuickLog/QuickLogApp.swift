@@ -109,9 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let target = windowTargetFrame, let hidden = windowHiddenFrame else { return }
 
         // Borderless "drawer" panel (Unclutter-like)
+        // NOTE: we avoid `.nonactivatingPanel` so the draft editor can receive focus.
         let panel = NSPanel(
             contentRect: hidden,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -165,13 +166,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func recalcWindowFrames() {
         let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1920, height: 1080)
         let windowHeight = screenFrame.height * CGFloat(appState.settings.panelHeightRatio)
-        let windowWidth = CGFloat(appState.settings.panelWidth)
+        // Unclutter-like: span the full visible width.
+        let windowWidth = screenFrame.width
 
-        let windowX = screenFrame.origin.x + (screenFrame.width - windowWidth) / 2
+        let windowX = screenFrame.origin.x
         // Top-aligned drawer
-        let targetY = screenFrame.maxY - windowHeight - 8
+        let targetY = screenFrame.maxY - windowHeight
         let target = NSRect(x: windowX, y: targetY, width: windowWidth, height: windowHeight)
-        let hidden = NSRect(x: windowX, y: screenFrame.maxY + 8, width: windowWidth, height: windowHeight)
+        let hidden = NSRect(x: windowX, y: screenFrame.maxY + 2, width: windowWidth, height: windowHeight)
 
         windowTargetFrame = target
         windowHiddenFrame = hidden

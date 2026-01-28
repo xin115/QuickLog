@@ -11,7 +11,8 @@ struct NotesListView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Notes")
-                    .font(.headline)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -23,6 +24,7 @@ struct NotesListView: View {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
             }
 
             List(selection: $appState.selectedNoteId) {

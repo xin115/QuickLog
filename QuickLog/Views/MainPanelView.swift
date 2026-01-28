@@ -9,53 +9,50 @@ struct MainPanelView: View {
 
     var body: some View {
         GeometryReader { geo in
-            HStack(spacing: 0) {
-                panelColumn { ClipboardHistoryView() }
-                    .frame(width: clamp(leftWidth, min: 220, max: geo.size.width - 520))
+            VStack(spacing: 0) {
+                // Single, clean top divider line like Unclutter.
+                Rectangle()
+                    .fill(.white.opacity(0.10))
+                    .frame(height: 1)
 
-                Splitter { dx in
-                    leftWidth = clamp(leftWidth + dx, min: 220, max: geo.size.width - 520)
-                    persistWidths(totalWidth: geo.size.width)
+                HStack(spacing: 0) {
+                    panelColumn { ClipboardHistoryView() }
+                        .frame(width: clamp(leftWidth, min: 220, max: geo.size.width - 520))
+
+                    Splitter { dx in
+                        leftWidth = clamp(leftWidth + dx, min: 220, max: geo.size.width - 520)
+                        persistWidths(totalWidth: geo.size.width)
+                    }
+
+                    panelColumn { DraftEditorView() }
+                        .frame(width: clamp(centerWidth, min: 420, max: geo.size.width - 440))
+
+                    Splitter { dx in
+                        centerWidth = clamp(centerWidth + dx, min: 420, max: geo.size.width - 440)
+                        persistWidths(totalWidth: geo.size.width)
+                    }
+
+                    panelColumn { NotesListView() }
+                        .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
                 }
-
-                panelColumn { DraftEditorView() }
-                    .frame(width: clamp(centerWidth, min: 420, max: geo.size.width - 440))
-
-                Splitter { dx in
-                    centerWidth = clamp(centerWidth + dx, min: 420, max: geo.size.width - 440)
-                    persistWidths(totalWidth: geo.size.width)
-                }
-
-                panelColumn { NotesListView() }
-                    .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
             }
             .onAppear {
                 leftWidth = CGFloat(appState.settings.leftPanelWidth)
                 centerWidth = CGFloat(appState.settings.centerPanelWidth)
                 rightWidth = CGFloat(appState.settings.rightPanelWidth)
-
-                // If saved widths don't fit current window, normalize.
                 normalizeToFit(totalWidth: geo.size.width)
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(.white.opacity(0.10), lineWidth: 1)
-            )
-            .padding(.top, 2)
+            .background(.ultraThinMaterial)
         }
     }
 
     @ViewBuilder
     private func panelColumn<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             content()
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private func persistWidths(totalWidth: CGFloat) {

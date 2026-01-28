@@ -15,23 +15,17 @@ struct ClipboardHistoryView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(.background.opacity(0.35))
-            )
+            .background(.clear)
         }
     }
 
     private var header: some View {
         HStack {
             Text("Clipboard")
-                .font(.headline)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             Spacer()
-
-            Text("Tap = Copy")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }
