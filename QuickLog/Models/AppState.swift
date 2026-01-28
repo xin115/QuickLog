@@ -169,14 +169,15 @@ final class AppState: ObservableObject {
     }
 
     private func addClipboardItem(_ item: ClipboardItem) {
-        if let existingIndex = clipboardHistory.firstIndex(where: { $0.content == item.content }) {
-            clipboardHistory.remove(at: existingIndex)
-        }
-
+        // Keep a true history. (Do not de-dupe by content; repeated copies should still show up.)
         clipboardHistory.insert(item, at: 0)
 
         if clipboardHistory.count > settings.clipboardHistorySize {
             clipboardHistory = Array(clipboardHistory.prefix(settings.clipboardHistorySize))
+        }
+
+        if DebugLog.enabled {
+            DebugLog.log("clipboard add count=\(clipboardHistory.count)/\(settings.clipboardHistorySize) preview=\(item.preview)")
         }
     }
 
