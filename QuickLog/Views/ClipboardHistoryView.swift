@@ -69,7 +69,7 @@ private struct ClipboardRow: View {
 
             HStack(spacing: 6) {
                 Button {
-                    copyToPasteboard(item.content)
+                    copyToPasteboard(item)
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
@@ -77,10 +77,13 @@ private struct ClipboardRow: View {
                 .help("Copy to clipboard")
 
                 Button {
-                    appState.insertIntoEditor(item.content + "\n")
+                    if let text = item.content.text {
+                        appState.insertIntoEditor(text + "\n")
+                    }
                 } label: {
                     Image(systemName: "arrow.down.left")
                 }
+                .disabled(item.content.text == nil)
                 .buttonStyle(.borderless)
                 .help("Insert into draft")
             }
@@ -89,17 +92,27 @@ private struct ClipboardRow: View {
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .onTapGesture {
-            copyToPasteboard(item.content)
+            copyToPasteboard(item)
         }
         .contextMenu {
-            Button("Copy") { copyToPasteboard(item.content) }
-            Button("Insert into Draft") { appState.insertIntoEditor(item.content + "\n") }
+            Button("Copy") { copyToPasteboard(item) }
+            if let text = item.content.text {
+                Button("Insert into Draft") { appState.insertIntoEditor(text + "\n") }
+            }
         }
     }
 
-    private func copyToPasteboard(_ string: String) {
+    private func copyToPasteboard(_ item: ClipboardItem) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.setString(string, forType: .string)
+
+        switch item.content {
+        case .text(let s):
+            pb.setString(s, forType: .string)
+        case .image(let data):
+            if let img = NSImage(data: data) {
+                pb.writeObjects([img])
+            }
+        }
     }
 }

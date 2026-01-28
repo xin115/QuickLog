@@ -32,16 +32,28 @@ final class ClipboardWatcher {
         let old = lastChangeCount
         lastChangeCount = pb.changeCount
 
+        // Prefer image when present
+        if let data = pb.data(forType: .tiff),
+           let img = NSImage(data: data),
+           let tiff = img.tiffRepresentation {
+            if DebugLog.enabled {
+                DebugLog.log("clipboard change \(old)→\(pb.changeCount) (image tiff bytes=\(tiff.count))")
+            }
+            onClipboardChange?(ClipboardItem.image(tiff))
+            return
+        }
+
+        // Fallback to plain string
         if let str = pb.string(forType: .string), !str.isEmpty {
             if DebugLog.enabled {
                 let preview = String(str.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
                 DebugLog.log("clipboard change \(old)→\(pb.changeCount) len=\(str.utf8.count) preview=\(preview)")
             }
-            let item = ClipboardItem(content: str)
+            let item = ClipboardItem.text(str)
             onClipboardChange?(item)
         } else {
             if DebugLog.enabled {
-                DebugLog.log("clipboard change \(old)→\(pb.changeCount) (no string)")
+                DebugLog.log("clipboard change \(old)→\(pb.changeCount) (no string/image)")
             }
         }
     }
