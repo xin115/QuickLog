@@ -78,6 +78,10 @@ final class AppState: ObservableObject {
 
     func loadNotes() {
         notes = notesService.loadNotes().sorted(by: { $0.updatedAt > $1.updatedAt })
+        if DebugLog.enabled {
+            let head = notes.prefix(5).map { "\($0.title)@\($0.updatedAt.timeIntervalSinceReferenceDate)" }.joined(separator: ", ")
+            DebugLog.log("loadNotes sorted: [\(head)]")
+        }
     }
 
     func loadEntries() {

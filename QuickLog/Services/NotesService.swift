@@ -113,7 +113,10 @@ final class NotesService {
     // MARK: - Helpers
 
     private func saveIndex(_ notes: [Note]) {
-        let index = NotesIndex(notes: notes)
+        // Keep the on-disk index sorted by last-updated so other consumers (and humans)
+        // see the same ordering as the UI.
+        let sorted = notes.sorted(by: { $0.updatedAt > $1.updatedAt })
+        let index = NotesIndex(notes: sorted)
         guard let data = try? encoder.encode(index) else { return }
         try? data.write(to: AppPaths.notesIndexURL, options: [.atomic])
     }
