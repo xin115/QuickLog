@@ -21,9 +21,11 @@ struct QuickLogMVPMain {
             return
         }
 
-        Task { @MainActor in
+        // IMPORTANT: set delegate + activation policy BEFORE app.run().
+        // Doing this asynchronously can race and prevent appDidFinishLaunching from firing,
+        // which means no status bar icon.
+        MainActor.assumeIsolated {
             app.delegate = appDelegate
-            // Menu-bar only app
             app.setActivationPolicy(.accessory)
         }
 
