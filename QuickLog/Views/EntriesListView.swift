@@ -15,13 +15,35 @@ struct EntriesListView: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(appState.entries) { entry in
+                    let visibleEntries: [Entry] = {
+                        if let pending = appState.pendingEntry {
+                            // Don't show a duplicate if an identical entry already exists at the top.
+                            if let first = appState.entries.first, first.content == pending.content {
+                                return appState.entries
+                            }
+                            return [pending] + appState.entries
+                        }
+                        return appState.entries
+                    }()
+
+                    ForEach(visibleEntries) { entry in
                         Button {
                             appState.openEntryForEditing(entry.id)
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(entry.preview.isEmpty ? "(empty)" : entry.preview)
-                                    .lineLimit(2)
+                                HStack(spacing: 6) {
+                                    Text(entry.preview.isEmpty ? "(empty)" : entry.preview)
+                                        .lineLimit(2)
+                                    if appState.pendingEntry?.id == entry.id {
+                                        Text("draft")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 1)
+                                            .background(.white.opacity(0.08))
+                                            .clipShape(Capsule())
+                                    }
+                                }
 
                                 HStack(spacing: 6) {
                                     Text(entry.target.displayName)

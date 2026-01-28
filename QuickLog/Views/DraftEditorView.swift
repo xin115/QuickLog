@@ -51,6 +51,9 @@ struct DraftEditorView: View {
                 .onChange(of: appState.draftContent) { _ in
                     autosaveTick &+= 1
 
+                    // Keep the right panel in sync with what's being typed.
+                    appState.saveDraft()
+
                     if case .entry = appState.editorContext {
                         appState.forceAutosaveNow()
                     }

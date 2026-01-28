@@ -15,6 +15,9 @@ final class AppState: ObservableObject {
 
     @Published var entries: [Entry] = []
 
+    // Pending (unsaved) draft preview shown in History when editing a fresh Draft.
+    @Published var pendingEntry: Entry?
+
     // Debug/status
     @Published var lastSaveStatus: String = ""
 
@@ -23,6 +26,10 @@ final class AppState: ObservableObject {
     private let entriesService: EntriesService
     private var draftAutosaveTimer: Timer?
     private var lastAutosaveContent: String = ""
+
+    // Track whether the current draft session has started producing a pending history row.
+    private var draftSessionId: UUID = UUID()
+    private var pendingCreatedAt: Date? = nil
 
     init() {
         self.clipboardWatcher = ClipboardWatcher()
@@ -80,11 +87,13 @@ final class AppState: ObservableObject {
             draftContent = draft.content
             editorMode = draft.editorMode
         }
+        refreshPendingEntry()
     }
 
     func saveDraft() {
         let draft = Draft(content: draftContent, editorMode: editorMode, lastModified: Date())
         draftService.saveDraft(draft)
+        refreshPendingEntry()
     }
 
     func newDraft() {
@@ -92,6 +101,11 @@ final class AppState: ObservableObject {
         editorContext = .draft
         draftContent = ""
         lastAutosaveContent = ""
+
+        draftSessionId = UUID()
+        pendingCreatedAt = nil
+        pendingEntry = nil
+
         saveDraft()
     }
 
@@ -106,7 +120,12 @@ final class AppState: ObservableObject {
             appendToTodaysLog()
             draftContent = ""
             lastAutosaveContent = ""
+            pendingEntry = nil
+            pendingCreatedAt = nil
             saveDraft()
+
+            // Next draft session.
+            draftSessionId = UUID()
 
         case .entry:
             newDraft()
@@ -114,7 +133,9 @@ final class AppState: ObservableObject {
     }
 
     func openTodaysLogForEditing() {
+        autosaveIfNeeded()
         editorContext = .todaysLog
+        refreshPendingEntry()
     }
 
     func forceAutosaveNow() {
@@ -135,6 +156,8 @@ final class AppState: ObservableObject {
             lastSaveStatus = "Saved history @ \(Date())"
             loadEntries()
         }
+
+        refreshPendingEntry()
     }
 
     private func addClipboardItem(_ item: ClipboardItem) {
@@ -194,12 +217,44 @@ final class AppState: ObservableObject {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
         autosaveIfNeeded()
         editorContext = .entry(id: id)
+        pendingEntry = nil
+        pendingCreatedAt = nil
         draftContent = entry.content
         lastAutosaveContent = draftContent
     }
 
     func insertIntoEditor(_ text: String) {
         draftContent += text
+        refreshPendingEntry()
+    }
+
+    private func refreshPendingEntry() {
+        // Only show pending item when editing a fresh Draft.
+        guard editorContext == .draft else {
+            pendingEntry = nil
+            pendingCreatedAt = nil
+            return
+        }
+
+        let trimmed = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            pendingEntry = nil
+            pendingCreatedAt = nil
+            return
+        }
+
+        // First time we become non-empty in this draft session, pin a createdAt.
+        if pendingCreatedAt == nil {
+            pendingCreatedAt = Date()
+        }
+
+        let preview = String(trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first ?? "")
+        pendingEntry = Entry(id: draftSessionId,
+                             createdAt: pendingCreatedAt ?? Date(),
+                             updatedAt: Date(),
+                             target: .todaysLog,
+                             preview: preview,
+                             content: trimmed)
     }
 }
 
