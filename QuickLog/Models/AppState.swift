@@ -17,6 +17,9 @@ final class AppState: ObservableObject {
 
     @Published var entries: [Entry] = []
 
+    // UI
+    @Published var rightPanelMode: RightPanelMode = .notes
+
     // Debug/status
     @Published var lastSaveStatus: String = ""
 
@@ -63,9 +66,11 @@ final class AppState: ObservableObject {
         }
         editorMode = settings.defaultEditorMode
         showMarkdownPreview = settings.markdownPreviewDefault
+        rightPanelMode = settings.rightPanelMode
     }
 
     func saveSettings() {
+        settings.rightPanelMode = rightPanelMode
         SettingsService.save(settings)
     }
 

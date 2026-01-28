@@ -29,6 +29,11 @@ struct Draft: Codable {
     var lastModified: Date
 }
 
+enum RightPanelMode: String, Codable, CaseIterable {
+    case notes = "Notes"
+    case history = "History"
+}
+
 struct AppSettings: Codable, Equatable {
     var panelHeightRatio: Double = 0.33
     var panelWidth: Double = 1000
@@ -40,4 +45,7 @@ struct AppSettings: Codable, Equatable {
     var leftPanelWidth: Double = 260
     var centerPanelWidth: Double = 560
     var rightPanelWidth: Double = 260
+
+    // Right panel content
+    var rightPanelMode: RightPanelMode = .notes
 }

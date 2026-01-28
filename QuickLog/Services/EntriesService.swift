@@ -15,7 +15,7 @@ final class EntriesService {
               let index = try? decoder.decode(EntriesIndex.self, from: data) else {
             return []
         }
-        return index.entries.sorted(by: { $0.createdAt > $1.createdAt })
+        return index.entries.sorted(by: { $0.updatedAt > $1.updatedAt })
     }
 
     func addEntry(_ entry: Entry, maxCount: Int = 300) {
@@ -37,6 +37,7 @@ final class EntriesService {
         let old = entries[i]
         entries[i] = Entry(id: old.id,
                           createdAt: old.createdAt,
+                          updatedAt: Date(),
                           target: old.target,
                           preview: preview,
                           content: content)

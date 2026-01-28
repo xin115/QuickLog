@@ -28,7 +28,7 @@ struct EntriesListView: View {
                                         .foregroundStyle(.secondary)
                                     Text("·")
                                         .foregroundStyle(.secondary)
-                                    Text(DateFormatters.relative.localizedString(for: entry.createdAt, relativeTo: Date()))
+                                    Text(DateFormatters.relative.localizedString(for: entry.updatedAt, relativeTo: Date()))
                                         .foregroundStyle(.secondary)
                                 }
                                 .font(.caption2)

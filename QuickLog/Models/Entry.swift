@@ -42,16 +42,18 @@ enum EntryTarget: Codable, Equatable {
 struct Entry: Identifiable, Codable, Equatable {
     let id: UUID
     let createdAt: Date
+    let updatedAt: Date
     let target: EntryTarget
     let preview: String
     let content: String
 
-    // Backward compatible decoding (older entries may not have `content`).
-    private enum CodingKeys: String, CodingKey { case id, createdAt, target, preview, content }
+    // Backward compatible decoding (older entries may not have `content` / `updatedAt`).
+    private enum CodingKeys: String, CodingKey { case id, createdAt, updatedAt, target, preview, content }
 
-    init(id: UUID = UUID(), createdAt: Date = Date(), target: EntryTarget, preview: String, content: String) {
+    init(id: UUID = UUID(), createdAt: Date = Date(), updatedAt: Date? = nil, target: EntryTarget, preview: String, content: String) {
         self.id = id
         self.createdAt = createdAt
+        self.updatedAt = updatedAt ?? createdAt
         self.target = target
         self.preview = preview
         self.content = content
@@ -61,6 +63,7 @@ struct Entry: Identifiable, Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
+        updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
         target = try c.decode(EntryTarget.self, forKey: .target)
         preview = try c.decode(String.self, forKey: .preview)
         content = try c.decodeIfPresent(String.self, forKey: .content) ?? preview
@@ -70,6 +73,7 @@ struct Entry: Identifiable, Codable, Equatable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(updatedAt, forKey: .updatedAt)
         try c.encode(target, forKey: .target)
         try c.encode(preview, forKey: .preview)
         try c.encode(content, forKey: .content)
