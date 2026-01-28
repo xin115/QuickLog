@@ -4,8 +4,6 @@ import Combine
 @MainActor
 final class AppState: ObservableObject {
     @Published var clipboardHistory: [ClipboardItem] = []
-    @Published var notes: [Note] = []
-    @Published var selectedNoteId: UUID?
 
     // Editor
     @Published var editorContext: EditorContext = .draft
@@ -17,14 +15,10 @@ final class AppState: ObservableObject {
 
     @Published var entries: [Entry] = []
 
-    // UI
-    @Published var rightPanelMode: RightPanelMode = .notes
-
     // Debug/status
     @Published var lastSaveStatus: String = ""
 
     let clipboardWatcher: ClipboardWatcher
-    private let notesService: NotesService
     private let draftService: DraftService
     private let entriesService: EntriesService
     private var draftAutosaveTimer: Timer?
@@ -32,13 +26,11 @@ final class AppState: ObservableObject {
 
     init() {
         self.clipboardWatcher = ClipboardWatcher()
-        self.notesService = NotesService()
         self.draftService = DraftService()
         self.entriesService = EntriesService()
 
         AppPaths.ensureDirsExist()
         loadSettings()
-        loadNotes()
         loadEntries()
 
         clipboardWatcher.onClipboardChange = { [weak self] item in
@@ -66,11 +58,9 @@ final class AppState: ObservableObject {
         }
         editorMode = settings.defaultEditorMode
         showMarkdownPreview = settings.markdownPreviewDefault
-        rightPanelMode = settings.rightPanelMode
     }
 
     func saveSettings() {
-        settings.rightPanelMode = rightPanelMode
         SettingsService.save(settings)
     }
 
@@ -79,14 +69,6 @@ final class AppState: ObservableObject {
         settings.centerPanelWidth = Double(center)
         settings.rightPanelWidth = Double(right)
         saveSettings()
-    }
-
-    func loadNotes() {
-        notes = notesService.loadNotes().sorted(by: { $0.updatedAt > $1.updatedAt })
-        if DebugLog.enabled {
-            let head = notes.prefix(10).map { "\($0.title)@\($0.updatedAt.timeIntervalSinceReferenceDate)" }.joined(separator: ", ")
-            DebugLog.log("loadNotes(sorted, top10)= [\(head)]")
-        }
     }
 
     func loadEntries() {
@@ -106,59 +88,33 @@ final class AppState: ObservableObject {
     }
 
     func newDraft() {
-        // Flush pending edits before clearing/switching.
         autosaveIfNeeded()
-
-        // Leave any note editing context to avoid overwriting a note with blank content.
         editorContext = .draft
-        selectedNoteId = nil
         draftContent = ""
         lastAutosaveContent = ""
         saveDraft()
     }
 
-    /// If the current editor is a plain Draft and it contains text,
-    /// "commit" it as a new saved entry (and append to Today's Log), then open a fresh Draft.
+    /// Commit current Draft/TodaysLog text as a new saved entry (and append to Today's Log), then open a fresh Draft.
     func commitDraftAndNew() {
-        // Ensure last keystrokes are persisted in the current context.
         autosaveIfNeeded()
 
         switch editorContext {
         case .draft, .todaysLog:
             let trimmed = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
-            // Persist the text as an entry + append to today's log (default capture behavior).
             appendToTodaysLog()
-            // Clear for the next capture.
             draftContent = ""
             lastAutosaveContent = ""
             saveDraft()
 
-        case .note, .entry:
-            // Note/history editing is already autosaved; just start a new scratch draft.
+        case .entry:
             newDraft()
         }
     }
 
     func openTodaysLogForEditing() {
         editorContext = .todaysLog
-        selectedNoteId = nil
-        // For now: editing Today's Log uses the persisted draft as the scratchpad,
-        // and writing happens via append model elsewhere.
-    }
-
-    func openNoteForEditing(noteId: UUID) {
-        // Flush any pending edits before switching.
-        autosaveIfNeeded()
-
-        editorContext = .note(id: noteId)
-        selectedNoteId = noteId
-        draftContent = notesService.loadNoteContent(noteId: noteId)
-        lastAutosaveContent = draftContent
-
-        if DebugLog.enabled {
-            DebugLog.log("openNoteForEditing noteId=\(noteId)")
-        }
     }
 
     func forceAutosaveNow() {
@@ -173,19 +129,7 @@ final class AppState: ObservableObject {
         case .draft:
             saveDraft()
         case .todaysLog:
-            // Keep draft autosave only (no continuous appends).
             saveDraft()
-        case .note(let id):
-            if DebugLog.enabled {
-                DebugLog.log("autosave(note) will save noteId=\(id) bytes=\(draftContent.utf8.count)")
-            }
-            if let url = notesService.saveNoteContent(noteId: id, content: draftContent) {
-                lastSaveStatus = "Saved note → \(url.lastPathComponent) @ \(Date())"
-            } else {
-                lastSaveStatus = "Failed saving note @ \(Date())"
-            }
-            // Reload/sort so the edited note jumps to the top immediately.
-            loadNotes()
         case .entry(let id):
             entriesService.updateEntry(id: id, content: draftContent)
             lastSaveStatus = "Saved history @ \(Date())"
@@ -206,11 +150,7 @@ final class AppState: ObservableObject {
     }
 
     var saveTargetName: String {
-        if let noteId = selectedNoteId,
-           let note = notes.first(where: { $0.id == noteId }) {
-            return note.title
-        }
-        return "Today's Log"
+        "Today's Log"
     }
 
     func saveAndNext() {
@@ -226,24 +166,11 @@ final class AppState: ObservableObject {
 
     private func saveToTarget() {
         guard !draftContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-
-        if let noteId = selectedNoteId {
-            appendToNote(noteId: noteId)
-        } else {
-            appendToTodaysLog()
-        }
-    }
-
-    private func appendToNote(noteId: UUID) {
-        notesService.appendToNote(noteId: noteId, content: draftContent)
-        loadNotes()
-
-        let title = notes.first(where: { $0.id == noteId })?.title ?? "Note"
-        addEntry(target: .note(id: noteId, title: title), content: draftContent)
+        appendToTodaysLog()
     }
 
     private func appendToTodaysLog() {
-        notesService.appendToTodaysLog(content: draftContent)
+        NotesLegacy.appendToTodaysLog(content: draftContent)
         todaysLogUpdatedAt = Date()
 
         addEntry(target: .todaysLog, content: draftContent)
@@ -258,25 +185,6 @@ final class AppState: ObservableObject {
         loadEntries()
     }
 
-    func createNote(title: String) {
-        _ = notesService.createNote(title: title)
-        // Always reload/sort from disk to keep ordering consistent.
-        loadNotes()
-    }
-
-    func renameNote(noteId: UUID, newTitle: String) {
-        notesService.renameNote(noteId: noteId, newTitle: newTitle)
-        loadNotes()
-    }
-
-    func deleteNote(noteId: UUID) {
-        notesService.deleteNote(noteId: noteId)
-        if selectedNoteId == noteId {
-            selectedNoteId = nil
-        }
-        loadNotes()
-    }
-
     func deleteEntry(_ id: UUID) {
         entriesService.deleteEntry(id)
         loadEntries()
@@ -284,21 +192,59 @@ final class AppState: ObservableObject {
 
     func openEntryForEditing(_ id: UUID) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
-        // Flush any pending edits before switching.
         autosaveIfNeeded()
-
         editorContext = .entry(id: id)
-        selectedNoteId = nil
         draftContent = entry.content
         lastAutosaveContent = draftContent
     }
 
-    func selectNote(_ noteId: UUID?) {
-        selectedNoteId = noteId
-    }
-
     func insertIntoEditor(_ text: String) {
         draftContent += text
+    }
+}
+
+/// Minimal leftover for Today's Log file append (we keep logs as md files).
+enum NotesLegacy {
+    static func appendToTodaysLog(content: String) {
+        let fm = FileManager.default
+        AppPaths.ensureDirsExist()
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let filename = df.string(from: Date()) + ".md"
+
+        let url = AppPaths.logsDir.appendingPathComponent(filename)
+        if !fm.fileExists(atPath: url.path) {
+            let header = "# " + df.string(from: Date()) + "\n\n"
+            try? header.data(using: .utf8)?.write(to: url, options: [.atomic])
+        }
+
+        let entry = formatEntry(content)
+        append(entry, to: url)
+    }
+
+    private static func formatEntry(_ content: String) -> String {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        let tf = DateFormatter()
+        tf.dateFormat = "HH:mm"
+        let time = tf.string(from: Date())
+
+        return "\n---\n" + "**" + time + "**\n\n" + trimmed + "\n"
+    }
+
+    private static func append(_ string: String, to url: URL) {
+        guard !string.isEmpty else { return }
+        if let data = string.data(using: .utf8) {
+            if let handle = try? FileHandle(forWritingTo: url) {
+                defer { try? handle.close() }
+                _ = try? handle.seekToEnd()
+                try? handle.write(contentsOf: data)
+            } else {
+                try? data.write(to: url, options: [.atomic])
+            }
+        }
     }
 }
 
