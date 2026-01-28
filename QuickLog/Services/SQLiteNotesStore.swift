@@ -127,19 +127,25 @@ final class SQLiteNotesStore: NotesStore {
 
     @discardableResult
     func saveContent(noteId: UUID, content: String) -> Bool {
+        let now = Date().timeIntervalSinceReferenceDate
         let sql = "UPDATE notes SET content=?, updatedAt=? WHERE id=?;"
         do {
             let stmt = try db.prepare(sql)
             defer { db.finalize(stmt) }
 
             sqlite3_bind_text(stmt, 1, content, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_double(stmt, 2, Date().timeIntervalSinceReferenceDate)
+            sqlite3_bind_double(stmt, 2, now)
             sqlite3_bind_text(stmt, 3, noteId.uuidString, -1, SQLITE_TRANSIENT)
 
             if sqlite3_step(stmt) != SQLITE_DONE {
                 let msg = String(cString: sqlite3_errmsg(db.db))
                 DebugLog.log("saveContent failed: \(msg)")
                 return false
+            }
+
+            if DebugLog.enabled {
+                let changed = sqlite3_changes(db.db)
+                DebugLog.log("saveContent noteId=\(noteId) updatedAt=\(now) changes=\(changed)")
             }
             return true
         } catch {
@@ -150,6 +156,7 @@ final class SQLiteNotesStore: NotesStore {
 
     func append(noteId: UUID, entry: String) {
         guard !entry.isEmpty else { return }
+        let now = Date().timeIntervalSinceReferenceDate
         // Single statement update to avoid race on read+write.
         let sql = "UPDATE notes SET content = content || ?, updatedAt=? WHERE id=?;"
         do {
@@ -157,10 +164,14 @@ final class SQLiteNotesStore: NotesStore {
             defer { db.finalize(stmt) }
 
             sqlite3_bind_text(stmt, 1, entry, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_double(stmt, 2, Date().timeIntervalSinceReferenceDate)
+            sqlite3_bind_double(stmt, 2, now)
             sqlite3_bind_text(stmt, 3, noteId.uuidString, -1, SQLITE_TRANSIENT)
 
             _ = sqlite3_step(stmt)
+            if DebugLog.enabled {
+                let changed = sqlite3_changes(db.db)
+                DebugLog.log("append noteId=\(noteId) updatedAt=\(now) changes=\(changed)")
+            }
         } catch {
             DebugLog.log("append failed: \(error)")
         }
