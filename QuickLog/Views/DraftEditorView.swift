@@ -3,6 +3,8 @@ import SwiftUI
 struct DraftEditorView: View {
     @EnvironmentObject var appState: AppState
 
+    @State private var showingManageNotes = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -12,9 +14,24 @@ struct DraftEditorView: View {
 
                 Spacer()
 
-                Text(appState.saveTargetName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Picker("Target", selection: $appState.selectedNoteId) {
+                    Text("Today's Log").tag(UUID?.none)
+                    ForEach(appState.notes) { note in
+                        Text(note.title).tag(Optional(note.id))
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .font(.caption)
+
+                Button {
+                    showingManageNotes = true
+                } label: {
+                    Image(systemName: "note.text")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Manage notes")
 
                 Button("Save") { appState.saveOnly() }
                     .keyboardShortcut("s", modifiers: [.command])
@@ -35,6 +52,12 @@ struct DraftEditorView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+        }
+        .sheet(isPresented: $showingManageNotes) {
+            NotesListView()
+                .environmentObject(appState)
+                .padding(14)
+                .frame(minWidth: 360, minHeight: 420)
         }
     }
 }
