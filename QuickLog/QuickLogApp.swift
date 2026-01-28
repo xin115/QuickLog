@@ -257,24 +257,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupUnclutterGesture() {
-        // Unclutter-like gesture:
-        // move pointer near the top edge, scroll down -> show
-        // when visible, scroll up near top -> hide
+        // Gesture:
+        // when cursor is in the menu bar area (top bar), two-finger scroll down -> show
+        // when visible, two-finger scroll up -> hide
+        // (Only applies while this app is running; implemented via global scroll monitor.)
         scrollMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.scrollWheel]) { [weak self] event in
             guard let self = self else { return }
+
+            // Prefer trackpad-like gestures (two-finger scroll). Mouse wheel also works,
+            // but this helps avoid accidental triggers.
+            guard event.hasPreciseScrollingDeltas else { return }
+
             let mouse = NSEvent.mouseLocation
             guard let screen = NSScreen.main else { return }
-            let vf = screen.visibleFrame
 
-            // Convert mouse Y to same coordinate space as visibleFrame
-            let nearTop = mouse.y >= (vf.maxY - 4)
-            guard nearTop else { return }
+            // Menu bar is the region above visibleFrame (which excludes it).
+            let menuBarHeight = max(0, screen.frame.maxY - screen.visibleFrame.maxY)
+            let menuBarBottomY = screen.frame.maxY - menuBarHeight
+            let inMenuBar = mouse.y >= (menuBarBottomY - 1)
+            guard inMenuBar else { return }
 
-            // On macOS, scrolling down usually gives negative deltaY.
-            if event.scrollingDeltaY < -2 {
-                self.showPanel()
-            } else if event.scrollingDeltaY > 2 {
-                self.hidePanel()
+            // Ignore tiny deltas.
+            let dy = event.scrollingDeltaY
+            guard abs(dy) > 2 else { return }
+
+            // Down (negative) => show; Up (positive) => hide.
+            if dy < 0 {
+                if self.popoverWindow?.isVisible != true {
+                    self.showPanel()
+                }
+            } else {
+                if self.popoverWindow?.isVisible == true {
+                    self.hidePanel()
+                }
             }
         }
     }
