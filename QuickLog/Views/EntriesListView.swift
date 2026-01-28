@@ -13,37 +13,46 @@ struct EntriesListView: View {
                 Spacer()
             }
 
-            List {
-                ForEach(appState.entries) { entry in
-                    Button {
-                        appState.openEntryForEditing(entry.id)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.preview.isEmpty ? "(empty)" : entry.preview)
-                                .lineLimit(2)
-
-                            HStack(spacing: 6) {
-                                Text(entry.target.displayName)
-                                    .foregroundStyle(.secondary)
-                                Text("·")
-                                    .foregroundStyle(.secondary)
-                                Text(DateFormatters.relative.localizedString(for: entry.createdAt, relativeTo: Date()))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .font(.caption2)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            appState.deleteEntry(entry.id)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(appState.entries) { entry in
+                        Button {
+                            appState.openEntryForEditing(entry.id)
                         } label: {
-                            Text("Delete")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.preview.isEmpty ? "(empty)" : entry.preview)
+                                    .lineLimit(2)
+
+                                HStack(spacing: 6) {
+                                    Text(entry.target.displayName)
+                                        .foregroundStyle(.secondary)
+                                    Text("·")
+                                        .foregroundStyle(.secondary)
+                                    Text(DateFormatters.relative.localizedString(for: entry.createdAt, relativeTo: Date()))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .font(.caption2)
+                            }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                appState.deleteEntry(entry.id)
+                            } label: {
+                                Text("Delete")
+                            }
+                        }
+
+                        Rectangle()
+                            .fill(.white.opacity(0.08))
+                            .frame(height: 1)
                     }
                 }
+                .padding(.top, 2)
             }
-            .listStyle(.plain)
         }
     }
 }
