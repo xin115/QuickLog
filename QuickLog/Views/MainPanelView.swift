@@ -3,6 +3,8 @@ import SwiftUI
 struct MainPanelView: View {
     @EnvironmentObject var appState: AppState
 
+    static let dividerWidth: CGFloat = 1
+
     @State private var leftWidth: CGFloat = 260
     @State private var centerWidth: CGFloat = 560
     @State private var rightWidth: CGFloat = 260
@@ -32,13 +34,31 @@ struct MainPanelView: View {
                         persistWidths(totalWidth: geo.size.width)
                     }
 
-                    // Always show a subtle divider before Notes (requested).
                     Rectangle()
                         .fill(.white.opacity(0.08))
-                        .frame(width: 1)
+                        .frame(width: Self.dividerWidth)
 
                     panelColumn(edge: .trailing) { EntriesListView() }
                         .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
+                }
+                .overlay(alignment: .topLeading) {
+                    if DebugLog.enabled {
+                        let used = leftWidth + centerWidth + rightWidth + (Splitter.width * 2) + Self.dividerWidth
+                        Text("geo=\(Int(geo.size.width)) used=\(Int(used)) L=\(Int(leftWidth)) C=\(Int(centerWidth)) R=\(Int(rightWidth))")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(.black.opacity(0.35))
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .padding(6)
+                    }
+                }
+                .overlay {
+                    if DebugLog.enabled {
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(.red.opacity(0.35), lineWidth: 1)
+                    }
                 }
             }
             .onAppear {
@@ -70,15 +90,15 @@ struct MainPanelView: View {
 
     private func persistWidths(totalWidth: CGFloat) {
         // Adjust right width to fill remaining space.
-        let splitterTotal: CGFloat = Splitter.width * 2
+        let chrome: CGFloat = (Splitter.width * 2) + Self.dividerWidth
         // Fill the remaining space exactly.
-        rightWidth = max(220, totalWidth - leftWidth - centerWidth - splitterTotal)
+        rightWidth = max(220, totalWidth - leftWidth - centerWidth - chrome)
         appState.updatePanelWidths(left: leftWidth, center: centerWidth, right: rightWidth)
     }
 
     private func normalizeToFit(totalWidth: CGFloat) {
-        let splitterTotal: CGFloat = Splitter.width * 2
-        let available = max(0, totalWidth - splitterTotal)
+        let chrome: CGFloat = (Splitter.width * 2) + Self.dividerWidth
+        let available = max(0, totalWidth - chrome)
         let sum = leftWidth + centerWidth + rightWidth
         guard sum > 0, sum > available else { return }
         let scale = available / sum
