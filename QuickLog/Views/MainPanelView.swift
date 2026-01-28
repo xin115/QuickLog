@@ -16,7 +16,7 @@ struct MainPanelView: View {
                     .frame(height: 1)
 
                 HStack(spacing: 0) {
-                    panelColumn { ClipboardHistoryView() }
+                    panelColumn(edge: .leading) { ClipboardHistoryView() }
                         .frame(width: clamp(leftWidth, min: 220, max: geo.size.width - 520))
 
                     Splitter { dx in
@@ -24,7 +24,7 @@ struct MainPanelView: View {
                         persistWidths(totalWidth: geo.size.width)
                     }
 
-                    panelColumn { DraftEditorView() }
+                    panelColumn(edge: .center) { DraftEditorView() }
                         .frame(width: clamp(centerWidth, min: 420, max: geo.size.width - 440))
 
                     Splitter { dx in
@@ -37,7 +37,7 @@ struct MainPanelView: View {
                         .fill(.white.opacity(0.08))
                         .frame(width: 1)
 
-                    panelColumn { EntriesListView() }
+                    panelColumn(edge: .trailing) { EntriesListView() }
                         .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
                 }
             }
@@ -51,12 +51,20 @@ struct MainPanelView: View {
         }
     }
 
+    private enum ColumnEdge {
+        case leading
+        case center
+        case trailing
+    }
+
     @ViewBuilder
-    private func panelColumn<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    private func panelColumn<Content: View>(edge: ColumnEdge, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(spacing: 8) {
             content()
         }
-        .padding(.horizontal, 12)
+        // Remove the outermost padding so the left/right columns sit flush to the window edges.
+        .padding(.leading, edge == .leading ? 0 : 12)
+        .padding(.trailing, edge == .trailing ? 0 : 12)
         .padding(.vertical, 10)
     }
 
