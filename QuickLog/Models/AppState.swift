@@ -145,6 +145,10 @@ final class AppState: ObservableObject {
         lastAutosaveContent = draftContent
     }
 
+    func forceAutosaveNow() {
+        autosaveIfNeeded()
+    }
+
     private func autosaveIfNeeded() {
         guard draftContent != lastAutosaveContent else { return }
         lastAutosaveContent = draftContent
@@ -157,6 +161,7 @@ final class AppState: ObservableObject {
             saveDraft()
         case .note(let id):
             notesService.saveNoteContent(noteId: id, content: draftContent)
+            // Reload/sort so the edited note jumps to the top immediately.
             loadNotes()
         }
     }
