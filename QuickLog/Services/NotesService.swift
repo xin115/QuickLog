@@ -15,7 +15,16 @@ final class NotesService {
               let index = try? decoder.decode(NotesIndex.self, from: data) else {
             return []
         }
-        return index.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
+
+        let sorted = index.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
+
+        // One-time normalization: if the on-disk order differs, rewrite notes.json
+        // so ordering is stable even across versions.
+        if index.notes != sorted {
+            saveIndex(sorted)
+        }
+
+        return sorted
     }
 
     func createNote(title: String) -> Note {
