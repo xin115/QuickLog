@@ -28,6 +28,10 @@ enum AppPaths {
         appSupportDir.appendingPathComponent("draft.json", isDirectory: false)
     }
 
+    static var entriesIndexURL: URL {
+        appSupportDir.appendingPathComponent("entries.json", isDirectory: false)
+    }
+
     static func ensureDirsExist() {
         let fm = FileManager.default
         for dir in [quickLogDocumentsDir, logsDir, notesDir, appSupportDir] {

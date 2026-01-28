@@ -12,19 +12,24 @@ final class AppState: ObservableObject {
     @Published var settings: AppSettings = AppSettings()
     @Published var todaysLogUpdatedAt: Date? = nil
 
+    @Published var entries: [Entry] = []
+
     let clipboardWatcher: ClipboardWatcher
     private let notesService: NotesService
     private let draftService: DraftService
+    private let entriesService: EntriesService
     private var draftAutosaveTimer: Timer?
 
     init() {
         self.clipboardWatcher = ClipboardWatcher()
         self.notesService = NotesService()
         self.draftService = DraftService()
+        self.entriesService = EntriesService()
 
         AppPaths.ensureDirsExist()
         loadSettings()
         loadNotes()
+        loadEntries()
 
         clipboardWatcher.onClipboardChange = { [weak self] item in
             self?.addClipboardItem(item)
@@ -60,6 +65,10 @@ final class AppState: ObservableObject {
 
     func loadNotes() {
         notes = notesService.loadNotes()
+    }
+
+    func loadEntries() {
+        entries = entriesService.loadEntries()
     }
 
     func loadDraft() {
@@ -118,11 +127,25 @@ final class AppState: ObservableObject {
     private func appendToNote(noteId: UUID) {
         notesService.appendToNote(noteId: noteId, content: draftContent)
         loadNotes()
+
+        let title = notes.first(where: { $0.id == noteId })?.title ?? "Note"
+        addEntry(target: .note(id: noteId, title: title), content: draftContent)
     }
 
     private func appendToTodaysLog() {
         notesService.appendToTodaysLog(content: draftContent)
         todaysLogUpdatedAt = Date()
+
+        addEntry(target: .todaysLog, content: draftContent)
+    }
+
+    private func addEntry(target: EntryTarget, content: String) {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let preview = String(trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first ?? "")
+        let entry = Entry(target: target, preview: preview)
+        entriesService.addEntry(entry)
+        loadEntries()
     }
 
     func createNote(title: String) {
@@ -141,6 +164,11 @@ final class AppState: ObservableObject {
             selectedNoteId = nil
         }
         loadNotes()
+    }
+
+    func deleteEntry(_ id: UUID) {
+        entriesService.deleteEntry(id)
+        loadEntries()
     }
 
     func selectNote(_ noteId: UUID?) {
