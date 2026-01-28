@@ -99,6 +99,11 @@ struct NotesListView: View {
                 .padding(.top, 2)
             }
         }
+        .onAppear {
+            if DebugLog.enabled {
+                DebugLog.log("NotesListView onAppear notesCount=\(appState.notes.count)")
+            }
+        }
         .sheet(isPresented: $showingCreate) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("New / Rename Note")

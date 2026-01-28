@@ -84,6 +84,11 @@ struct DraftEditorView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .onChange(of: showingManageNotes) { newValue in
+            if DebugLog.enabled {
+                DebugLog.log("showingManageNotes=\(newValue)")
+            }
+        }
         .sheet(isPresented: $showingManageNotes) {
             NotesListView()
                 .environmentObject(appState)
