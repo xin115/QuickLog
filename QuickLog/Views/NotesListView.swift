@@ -7,6 +7,10 @@ struct NotesListView: View {
     @State private var newTitle: String = ""
     @State private var editingNoteId: UUID? = nil
 
+    private var sortedNotes: [Note] {
+        appState.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -50,7 +54,6 @@ struct NotesListView: View {
                         .fill(.white.opacity(0.08))
                         .frame(height: 1)
 
-                    let sortedNotes = appState.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
                     ForEach(sortedNotes) { note in
                         Button {
                             appState.openNoteForEditing(noteId: note.id)
