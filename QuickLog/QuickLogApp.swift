@@ -38,17 +38,38 @@ enum QuickLogSelfTest {
     static func run() {
         // Smoke test: verify file outputs without needing UI / Accessibility.
         let state = AppState()
-        state.draftContent = "SelfTest: \(Date())\n\nHello from QuickLogMVP."
-        state.saveAndNext() // should append to Today's Log and clear
 
-        // Also verify draft save/load path works.
+        // 1) Append to Today's Log via the new capture flow.
+        state.draftContent = "SelfTest: \(Date())\n\nHello from QuickLogMVP."
+        state.commitDraftAndNew()
+
+        // 2) Verify draft save/load path works.
         state.draftContent = "SelfTest Draft: \(UUID().uuidString)"
         state.saveDraft()
 
+        // 3) Verify that editing a note updates updatedAt and re-sorts notes.
+        let notesService = NotesService()
+        let n1 = notesService.createNote(title: "SelfTest Note A")
+        let n2 = notesService.createNote(title: "SelfTest Note B")
+        state.loadNotes()
+
+        // Open the older note and modify it; it should become most-recent.
+        state.openNoteForEditing(noteId: n1.id)
+        state.draftContent += "\n\nEdited at \(Date())"
+        state.forceAutosaveNow()
+
+        state.loadNotes()
+        let topId = state.notes.first?.id
+        let reorderOK = (topId == n1.id)
+
         // Print paths so the runner can verify.
         print("SELFTEST_OK")
+        print("reorderOK=\(reorderOK)")
+        print("topNoteId=\(topId?.uuidString ?? "nil")")
+        print("expectedTop=\(n1.id.uuidString)")
         print("logsDir=\(AppPaths.logsDir.path)")
         print("appSupportDir=\(AppPaths.appSupportDir.path)")
+        _ = n2 // silence unused warning if any
     }
 }
 

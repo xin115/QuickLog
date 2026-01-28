@@ -27,50 +27,64 @@ struct NotesListView: View {
                 .foregroundStyle(.secondary)
             }
 
-            List {
-                Button {
-                    appState.editorContext = .todaysLog
-                    appState.selectedNoteId = nil
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Today's Log")
-                        if let dt = appState.todaysLogUpdatedAt {
-                            Text(DateFormatters.relative.localizedString(for: dt, relativeTo: Date()))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-
-                ForEach(appState.notes) { note in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     Button {
-                        appState.openNoteForEditing(noteId: note.id)
+                        appState.editorContext = .todaysLog
+                        appState.selectedNoteId = nil
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(note.title)
-                            Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            Text("Today's Log")
+                            if let dt = appState.todaysLogUpdatedAt {
+                                Text(DateFormatters.relative.localizedString(for: dt, relativeTo: Date()))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(.plain)
-                    .contextMenu {
-                        Button("Rename") {
-                            editingNoteId = note.id
-                            newTitle = note.title
-                            showingCreate = true
+
+                    Rectangle()
+                        .fill(.white.opacity(0.08))
+                        .frame(height: 1)
+
+                    ForEach(appState.notes) { note in
+                        Button {
+                            appState.openNoteForEditing(noteId: note.id)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(note.title)
+                                Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Rename") {
+                                editingNoteId = note.id
+                                newTitle = note.title
+                                showingCreate = true
+                            }
+
+                            Button(role: .destructive) {
+                                appState.deleteNote(noteId: note.id)
+                            } label: {
+                                Text("Delete")
+                            }
                         }
 
-                        Button(role: .destructive) {
-                            appState.deleteNote(noteId: note.id)
-                        } label: {
-                            Text("Delete")
-                        }
+                        Rectangle()
+                            .fill(.white.opacity(0.08))
+                            .frame(height: 1)
                     }
                 }
+                .padding(.top, 2)
             }
-            .listStyle(.plain)
         }
         .sheet(isPresented: $showingCreate) {
             VStack(alignment: .leading, spacing: 12) {
