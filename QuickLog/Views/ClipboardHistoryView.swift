@@ -25,6 +25,10 @@ struct ClipboardHistoryView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+            Text("\(appState.clipboardHistory.count)/\(appState.settings.clipboardHistorySize)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
             Spacer()
         }
     }

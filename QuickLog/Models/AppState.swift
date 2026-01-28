@@ -63,8 +63,16 @@ final class AppState: ObservableObject {
         if let loadedSettings = SettingsService.load() {
             settings = loadedSettings
         }
+
+        // Normalize any legacy/bad values.
+        if settings.clipboardHistorySize < 10 { settings.clipboardHistorySize = 10 }
+        if settings.clipboardHistorySize > 200 { settings.clipboardHistorySize = 200 }
+
         editorMode = settings.defaultEditorMode
         showMarkdownPreview = settings.markdownPreviewDefault
+
+        // Persist normalized settings so behavior is stable.
+        SettingsService.save(settings)
     }
 
     func saveSettings() {
