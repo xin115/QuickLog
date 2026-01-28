@@ -57,11 +57,19 @@ struct EntriesListView: View {
                                 }
                                 .font(.caption2)
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
+                            .padding(.vertical, 7)
+                            .padding(.horizontal, 10)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(isCurrent ? .white.opacity(0.08) : .clear)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .background(
+                                ZStack {
+                                    if isCurrent {
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .fill(.white.opacity(0.14))
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(.white.opacity(0.22), lineWidth: 1)
+                                    }
+                                }
+                            )
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
