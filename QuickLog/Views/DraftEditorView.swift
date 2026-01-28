@@ -27,9 +27,10 @@ struct DraftEditorView: View {
                 }
 
                 Button("New") {
-                    appState.newDraft()
+                    appState.commitDraftAndNew()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
+                .disabled(appState.editorContext == .draft && appState.draftContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Button {
                     showingManageNotes = true

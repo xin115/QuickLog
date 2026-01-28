@@ -102,6 +102,26 @@ final class AppState: ObservableObject {
         saveDraft()
     }
 
+    /// If the current editor is a plain Draft and it contains text,
+    /// "commit" it as a new saved entry (and append to Today's Log), then open a fresh Draft.
+    func commitDraftAndNew() {
+        switch editorContext {
+        case .draft, .todaysLog:
+            let trimmed = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            // Persist the text as an entry + append to today's log (default capture behavior).
+            appendToTodaysLog()
+            // Clear for the next capture.
+            draftContent = ""
+            lastAutosaveContent = ""
+            saveDraft()
+
+        case .note:
+            // Note editing is already autosaved; just start a new scratch draft.
+            newDraft()
+        }
+    }
+
     func openTodaysLogForEditing() {
         editorContext = .todaysLog
         selectedNoteId = nil
