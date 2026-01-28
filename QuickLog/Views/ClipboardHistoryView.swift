@@ -8,14 +8,29 @@ struct ClipboardHistoryView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
 
-            List {
-                ForEach(appState.clipboardHistory) { item in
-                    ClipboardRow(item: item)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(appState.clipboardHistory) { item in
+                            ClipboardRow(item: item)
+                                .id(item.id)
+
+                            Rectangle()
+                                .fill(.white.opacity(0.08))
+                                .frame(height: 1)
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+                .scrollIndicators(.hidden)
+                .onChange(of: appState.clipboardHistory.first?.id) { newId in
+                    // Keep newest item visible.
+                    guard let newId else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(newId, anchor: .top)
+                    }
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(.clear)
         }
     }
 
