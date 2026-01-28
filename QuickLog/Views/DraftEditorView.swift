@@ -5,7 +5,6 @@ struct DraftEditorView: View {
 
     @State private var showingManageNotes = false
     @State private var autosaveTick: Int = 0
-    @State private var noteAutosaveTask: Task<Void, Never>? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -52,15 +51,11 @@ struct DraftEditorView: View {
                     // (Optional) view tick, compatible with older macOS.
                     autosaveTick &+= 1
 
-                    // If we're editing a note, autosave quickly so the note re-sorts to the top.
+                    // If we're editing a note, save immediately so:
+                    // 1) the file is definitely updated
+                    // 2) the note's updatedAt refreshes and the list re-sorts to the top
                     if case .note = appState.editorContext {
-                        noteAutosaveTask?.cancel()
-                        noteAutosaveTask = Task {
-                            try? await Task.sleep(nanoseconds: 350_000_000)
-                            await MainActor.run {
-                                appState.forceAutosaveNow()
-                            }
-                        }
+                        appState.forceAutosaveNow()
                     }
                 }
 

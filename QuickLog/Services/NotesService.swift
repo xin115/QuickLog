@@ -78,8 +78,10 @@ final class NotesService {
     }
 
     func loadNoteContent(noteId: UUID) -> String {
-        // Notes are stored as markdown for now.
-        let url = noteURL(noteId: noteId, format: .markdown)
+        // Use the note's recorded format when possible.
+        let notes = loadNotes()
+        let format = notes.first(where: { $0.id == noteId })?.format ?? .markdown
+        let url = noteURL(noteId: noteId, format: format)
         guard let data = try? Data(contentsOf: url) else { return "" }
         return String(decoding: data, as: UTF8.self)
     }
