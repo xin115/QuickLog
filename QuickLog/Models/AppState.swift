@@ -125,8 +125,8 @@ final class AppState: ObservableObject {
             lastAutosaveContent = ""
             saveDraft()
 
-        case .note:
-            // Note editing is already autosaved; just start a new scratch draft.
+        case .note, .entry:
+            // Note/history editing is already autosaved; just start a new scratch draft.
             newDraft()
         }
     }
@@ -170,6 +170,10 @@ final class AppState: ObservableObject {
             }
             // Reload/sort so the edited note jumps to the top immediately.
             loadNotes()
+        case .entry(let id):
+            entriesService.updateEntry(id: id, content: draftContent)
+            lastSaveStatus = "Saved history @ \(Date())"
+            loadEntries()
         }
     }
 
@@ -263,11 +267,13 @@ final class AppState: ObservableObject {
 
     func openEntryForEditing(_ id: UUID) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
-        editorContext = .draft
+        // Flush any pending edits before switching.
+        autosaveIfNeeded()
+
+        editorContext = .entry(id: id)
         selectedNoteId = nil
         draftContent = entry.content
         lastAutosaveContent = draftContent
-        saveDraft()
     }
 
     func selectNote(_ noteId: UUID?) {

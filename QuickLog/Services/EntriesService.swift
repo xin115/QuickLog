@@ -27,6 +27,22 @@ final class EntriesService {
         save(entries)
     }
 
+    func updateEntry(id: UUID, content: String) {
+        var entries = loadEntries()
+        guard let i = entries.firstIndex(where: { $0.id == id }) else { return }
+
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preview = String(trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first ?? "")
+
+        let old = entries[i]
+        entries[i] = Entry(id: old.id,
+                          createdAt: old.createdAt,
+                          target: old.target,
+                          preview: preview,
+                          content: content)
+        save(entries)
+    }
+
     func deleteEntry(_ id: UUID) {
         var entries = loadEntries()
         entries.removeAll(where: { $0.id == id })

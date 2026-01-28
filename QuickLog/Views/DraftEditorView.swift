@@ -20,6 +20,11 @@ struct DraftEditorView: View {
                     Text(note.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                } else if case .entry(let id) = appState.editorContext,
+                          let entry = appState.entries.first(where: { $0.id == id }) {
+                    Text(entry.target.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 } else {
                     Text("autosave")
                         .font(.caption)
@@ -66,6 +71,8 @@ struct DraftEditorView: View {
                     // 1) the file is definitely updated
                     // 2) the note's updatedAt refreshes and the list re-sorts to the top
                     if case .note = appState.editorContext {
+                        appState.forceAutosaveNow()
+                    } else if case .entry = appState.editorContext {
                         appState.forceAutosaveNow()
                     }
                 }
