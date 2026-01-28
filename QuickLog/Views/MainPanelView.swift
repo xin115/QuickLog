@@ -71,7 +71,8 @@ struct MainPanelView: View {
     private func persistWidths(totalWidth: CGFloat) {
         // Adjust right width to fill remaining space.
         let splitterTotal: CGFloat = Splitter.width * 2
-        rightWidth = max(220, totalWidth - leftWidth - centerWidth - splitterTotal - 24) // extra padding
+        // Fill the remaining space exactly.
+        rightWidth = max(220, totalWidth - leftWidth - centerWidth - splitterTotal)
         appState.updatePanelWidths(left: leftWidth, center: centerWidth, right: rightWidth)
     }
 
