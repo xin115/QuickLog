@@ -26,6 +26,17 @@ struct DraftEditorView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if !appState.lastSaveStatus.isEmpty {
+                    Text("·")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(appState.lastSaveStatus)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+
                 Button("New") {
                     appState.commitDraftAndNew()
                 }

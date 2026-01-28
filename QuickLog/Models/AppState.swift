@@ -17,6 +17,9 @@ final class AppState: ObservableObject {
 
     @Published var entries: [Entry] = []
 
+    // Debug/status
+    @Published var lastSaveStatus: String = ""
+
     let clipboardWatcher: ClipboardWatcher
     private let notesService: NotesService
     private let draftService: DraftService
@@ -160,7 +163,11 @@ final class AppState: ObservableObject {
             // Keep draft autosave only (no continuous appends).
             saveDraft()
         case .note(let id):
-            notesService.saveNoteContent(noteId: id, content: draftContent)
+            if let url = notesService.saveNoteContent(noteId: id, content: draftContent) {
+                lastSaveStatus = "Saved note → \(url.lastPathComponent) @ \(Date())"
+            } else {
+                lastSaveStatus = "Failed saving note @ \(Date())"
+            }
             // Reload/sort so the edited note jumps to the top immediately.
             loadNotes()
         }

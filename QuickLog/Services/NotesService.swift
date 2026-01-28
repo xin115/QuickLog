@@ -86,16 +86,28 @@ final class NotesService {
         return String(decoding: data, as: UTF8.self)
     }
 
-    func saveNoteContent(noteId: UUID, content: String) {
+    @discardableResult
+    func saveNoteContent(noteId: UUID, content: String) -> URL? {
         var notes = loadNotes()
-        guard let i = notes.firstIndex(where: { $0.id == noteId }) else { return }
+        guard let i = notes.firstIndex(where: { $0.id == noteId }) else {
+            DebugLog.log("saveNoteContent: noteId not found: \(noteId)")
+            return nil
+        }
         let note = notes[i]
         let url = noteURL(noteId: noteId, format: note.format)
         ensureNoteFileExists(note)
-        try? content.data(using: .utf8)?.write(to: url, options: [.atomic])
+
+        do {
+            try content.data(using: .utf8)?.write(to: url, options: [.atomic])
+            DebugLog.log("saveNoteContent wrote \(content.utf8.count) bytes -> \(url.path)")
+        } catch {
+            DebugLog.log("saveNoteContent write failed -> \(url.path): \(error)")
+            return nil
+        }
 
         notes[i].updatedAt = Date()
         saveIndex(notes)
+        return url
     }
 
     // MARK: - Helpers
