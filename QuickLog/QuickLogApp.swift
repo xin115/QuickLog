@@ -171,12 +171,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         popoverWindow = panel
 
-        // ESC to hide
+        // Key handling
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 && self?.popoverWindow?.isVisible == true {
-                self?.hidePanel()
+            guard let self else { return event }
+
+            // ESC to hide
+            if event.keyCode == 53 && self.popoverWindow?.isVisible == true {
+                self.hidePanel()
                 return nil
             }
+
+            // Ensure standard clipboard shortcuts work even when the app has no visible menubar.
+            // This routes actions through the responder chain to the focused TextEditor.
+            if event.modifierFlags.contains(.command), self.popoverWindow?.isVisible == true {
+                let ch = event.charactersIgnoringModifiers?.lowercased() ?? ""
+                switch ch {
+                case "c":
+                    NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
+                    return nil
+                case "v":
+                    NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
+                    return nil
+                case "x":
+                    NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
+                    return nil
+                case "a":
+                    NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+                    return nil
+                case "z":
+                    if event.modifierFlags.contains(.shift) {
+                        NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+                    } else {
+                        NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+                    }
+                    return nil
+                default:
+                    break
+                }
+            }
+
             return event
         }
 
