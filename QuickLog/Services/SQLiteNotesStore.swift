@@ -13,6 +13,23 @@ final class SQLiteNotesStore: NotesStore {
         bootstrap()
     }
 
+    func topNotesDebug(limit: Int) -> String {
+        let sql = "SELECT title, updatedAt FROM notes ORDER BY updatedAt DESC LIMIT \(limit);"
+        do {
+            let stmt = try db.prepare(sql)
+            defer { db.finalize(stmt) }
+            var parts: [String] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let title = sqlite3_column_text(stmt, 0).flatMap { String(cString: $0) } ?? ""
+                let ts = sqlite3_column_double(stmt, 1)
+                parts.append("\(title)@\(ts)")
+            }
+            return "[" + parts.joined(separator: ", ") + "]"
+        } catch {
+            return "(topNotesDebug error: \(error))"
+        }
+    }
+
     private func bootstrap() {
         _ = db.exec("""
         CREATE TABLE IF NOT EXISTS notes (
@@ -146,6 +163,8 @@ final class SQLiteNotesStore: NotesStore {
             if DebugLog.enabled {
                 let changed = sqlite3_changes(db.db)
                 DebugLog.log("saveContent noteId=\(noteId) updatedAt=\(now) changes=\(changed)")
+                // Also log current DB order (top 5) for copy/paste debugging.
+                DebugLog.log("dbTopNotes: \(topNotesDebug(limit: 5))")
             }
             return true
         } catch {

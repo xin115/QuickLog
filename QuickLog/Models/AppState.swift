@@ -79,8 +79,8 @@ final class AppState: ObservableObject {
     func loadNotes() {
         notes = notesService.loadNotes().sorted(by: { $0.updatedAt > $1.updatedAt })
         if DebugLog.enabled {
-            let head = notes.prefix(5).map { "\($0.title)@\($0.updatedAt.timeIntervalSinceReferenceDate)" }.joined(separator: ", ")
-            DebugLog.log("loadNotes sorted: [\(head)]")
+            let head = notes.prefix(10).map { "\($0.title)@\($0.updatedAt.timeIntervalSinceReferenceDate)" }.joined(separator: ", ")
+            DebugLog.log("loadNotes(sorted, top10)= [\(head)]")
         }
     }
 
@@ -150,6 +150,10 @@ final class AppState: ObservableObject {
         selectedNoteId = noteId
         draftContent = notesService.loadNoteContent(noteId: noteId)
         lastAutosaveContent = draftContent
+
+        if DebugLog.enabled {
+            DebugLog.log("openNoteForEditing noteId=\(noteId)")
+        }
     }
 
     func forceAutosaveNow() {
@@ -167,6 +171,9 @@ final class AppState: ObservableObject {
             // Keep draft autosave only (no continuous appends).
             saveDraft()
         case .note(let id):
+            if DebugLog.enabled {
+                DebugLog.log("autosave(note) will save noteId=\(id) bytes=\(draftContent.utf8.count)")
+            }
             if let url = notesService.saveNoteContent(noteId: id, content: draftContent) {
                 lastSaveStatus = "Saved note → \(url.lastPathComponent) @ \(Date())"
             } else {

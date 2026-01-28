@@ -56,6 +56,9 @@ struct NotesListView: View {
 
                     ForEach(sortedNotes) { note in
                         Button {
+                            if DebugLog.enabled {
+                                DebugLog.log("NotesList tap title=\(note.title) id=\(note.id) updatedAt=\(note.updatedAt.timeIntervalSinceReferenceDate)")
+                            }
                             appState.openNoteForEditing(noteId: note.id)
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
