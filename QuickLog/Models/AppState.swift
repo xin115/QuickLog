@@ -169,8 +169,15 @@ final class AppState: ObservableObject {
     }
 
     private func addClipboardItem(_ item: ClipboardItem) {
-        // Keep a true history. (Do not de-dupe by content; repeated copies should still show up.)
-        clipboardHistory.insert(item, at: 0)
+        // De-dupe by exact content: if the same string is copied again,
+        // move the existing record to the top and refresh its timestamp.
+        if let existingIndex = clipboardHistory.firstIndex(where: { $0.content == item.content }) {
+            var existing = clipboardHistory.remove(at: existingIndex)
+            existing = ClipboardItem(id: existing.id, content: existing.content, timestamp: Date(), isPinned: existing.isPinned)
+            clipboardHistory.insert(existing, at: 0)
+        } else {
+            clipboardHistory.insert(item, at: 0)
+        }
 
         if clipboardHistory.count > settings.clipboardHistorySize {
             clipboardHistory = Array(clipboardHistory.prefix(settings.clipboardHistorySize))
