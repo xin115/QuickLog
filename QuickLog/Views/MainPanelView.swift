@@ -32,6 +32,11 @@ struct MainPanelView: View {
                         persistWidths(totalWidth: geo.size.width)
                     }
 
+                    // Always show a subtle divider before Notes (requested).
+                    Rectangle()
+                        .fill(.white.opacity(0.08))
+                        .frame(width: 1)
+
                     panelColumn { NotesListView() }
                         .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
                 }

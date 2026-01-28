@@ -109,10 +109,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let target = windowTargetFrame, let hidden = windowHiddenFrame else { return }
 
         // Borderless "drawer" panel (Unclutter-like)
-        // NOTE: we avoid `.nonactivatingPanel` so the draft editor can receive focus.
         let panel = NSPanel(
             contentRect: hidden,
-            styleMask: [.borderless, .resizable],
+            styleMask: [.borderless, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -121,9 +120,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.hasShadow = true
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.isMovableByWindowBackground = true
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
+        // Allow key focus for TextEditor.
+        panel.becomesKeyOnlyIfNeeded = false
+
 
         let contentView = MainPanelView()
             .environmentObject(appState)
@@ -217,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.setFrame(hidden, display: false)
         window.alphaValue = 0
         window.orderFrontRegardless()
+        window.makeKey()
         NSApp.activate(ignoringOtherApps: true)
 
         NSAnimationContext.runAnimationGroup { ctx in
