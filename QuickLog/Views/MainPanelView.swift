@@ -78,7 +78,7 @@ struct MainPanelView: View {
         VStack(spacing: 8) {
             content()
         }
-        .padding(.leading, edge == .leading ? 0 : 12)
+        .padding(.leading, edge == .leading ? 12 : 12)
         .padding(.trailing, edge == .trailing ? 0 : 12)
         .padding(.vertical, 10)
     }
