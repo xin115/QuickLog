@@ -94,6 +94,9 @@ final class AppState: ObservableObject {
     }
 
     func newDraft() {
+        // Flush pending edits before clearing/switching.
+        autosaveIfNeeded()
+
         // Leave any note editing context to avoid overwriting a note with blank content.
         editorContext = .draft
         selectedNoteId = nil
@@ -105,6 +108,9 @@ final class AppState: ObservableObject {
     /// If the current editor is a plain Draft and it contains text,
     /// "commit" it as a new saved entry (and append to Today's Log), then open a fresh Draft.
     func commitDraftAndNew() {
+        // Ensure last keystrokes are persisted in the current context.
+        autosaveIfNeeded()
+
         switch editorContext {
         case .draft, .todaysLog:
             let trimmed = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -130,6 +136,9 @@ final class AppState: ObservableObject {
     }
 
     func openNoteForEditing(noteId: UUID) {
+        // Flush any pending edits before switching.
+        autosaveIfNeeded()
+
         editorContext = .note(id: noteId)
         selectedNoteId = noteId
         draftContent = notesService.loadNoteContent(noteId: noteId)
