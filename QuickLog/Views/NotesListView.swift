@@ -60,9 +60,15 @@ struct NotesListView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(note.title)
-                                Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                                if DebugLog.enabled {
+                                    Text(DateFormatters.timeWithSeconds.string(from: note.updatedAt))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                             .padding(.vertical, 6)
                             .frame(maxWidth: .infinity, alignment: .leading)
