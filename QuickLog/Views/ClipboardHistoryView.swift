@@ -55,10 +55,29 @@ private struct ClipboardRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.preview)
-                    .font(.system(size: 12))
-                    .lineLimit(3)
+            VStack(alignment: .leading, spacing: 6) {
+                switch item.content {
+                case .text:
+                    Text(item.preview)
+                        .font(.system(size: 12))
+                        .lineLimit(3)
+                case .image:
+                    if let img = item.nsImage {
+                        Image(nsImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 72, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(.white.opacity(0.18), lineWidth: 1)
+                            )
+                    } else {
+                        Text("(image)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Text(item.formattedTimestamp)
                     .font(.caption2)
