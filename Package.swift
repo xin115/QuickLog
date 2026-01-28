@@ -12,7 +12,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "QuickLogMVP",
-            path: "QuickLog"
+            path: "QuickLog",
+            linkerSettings: [
+                .linkedLibrary("sqlite3")
+            ]
         )
     ]
 )

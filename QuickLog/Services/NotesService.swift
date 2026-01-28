@@ -1,71 +1,37 @@
 import Foundation
 
 final class NotesService {
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
+    private let store: NotesStore
 
     init() {
-        encoder.outputFormatting = [.prettyPrinted]
         AppPaths.ensureDirsExist()
+
+        let dbURL = AppPaths.appSupportDir.appendingPathComponent("notes.sqlite", isDirectory: false)
+        let sqliteStore = SQLiteNotesStore(dbURL: dbURL)
+        self.store = sqliteStore
+
+        migrateFromLegacyFilesIfNeeded(into: sqliteStore)
     }
 
     func loadNotes() -> [Note] {
-        let url = AppPaths.notesIndexURL
-        guard let data = try? Data(contentsOf: url),
-              let index = try? decoder.decode(NotesIndex.self, from: data) else {
-            return []
-        }
-
-        let sorted = index.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
-
-        // One-time normalization: if the on-disk order differs, rewrite notes.json
-        // so ordering is stable even across versions.
-        if index.notes != sorted {
-            saveIndex(sorted)
-        }
-
-        return sorted
+        store.fetchNotes()
     }
 
     func createNote(title: String) -> Note {
-        var notes = loadNotes()
-        let note = Note(title: title, updatedAt: Date(), format: .markdown)
-        notes.insert(note, at: 0)
-        saveIndex(notes)
-        ensureNoteFileExists(note)
-        return note
+        store.createNote(title: title, format: .markdown)
     }
 
     func renameNote(noteId: UUID, newTitle: String) {
-        var notes = loadNotes()
-        guard let i = notes.firstIndex(where: { $0.id == noteId }) else { return }
-        notes[i].title = newTitle
-        notes[i].updatedAt = Date()
-        saveIndex(notes)
+        store.renameNote(noteId: noteId, newTitle: newTitle)
     }
 
     func deleteNote(noteId: UUID) {
-        var notes = loadNotes()
-        notes.removeAll(where: { $0.id == noteId })
-        saveIndex(notes)
-
-        let url = noteURL(noteId: noteId, format: .markdown)
-        try? FileManager.default.removeItem(at: url)
+        store.deleteNote(noteId: noteId)
     }
 
     func appendToNote(noteId: UUID, content: String) {
-        var notes = loadNotes()
-        guard let i = notes.firstIndex(where: { $0.id == noteId }) else { return }
-
-        let note = notes[i]
-        let url = noteURL(noteId: noteId, format: note.format)
-        ensureNoteFileExists(note)
-
         let entry = formatEntry(content)
-        append(entry, to: url)
-
-        notes[i].updatedAt = Date()
-        saveIndex(notes)
+        store.append(noteId: noteId, entry: entry)
     }
 
     func appendToTodaysLog(content: String) {
@@ -87,61 +53,49 @@ final class NotesService {
     }
 
     func loadNoteContent(noteId: UUID) -> String {
-        // Use the note's recorded format when possible.
-        let notes = loadNotes()
-        let format = notes.first(where: { $0.id == noteId })?.format ?? .markdown
-        let url = noteURL(noteId: noteId, format: format)
-        guard let data = try? Data(contentsOf: url) else { return "" }
-        return String(decoding: data, as: UTF8.self)
+        store.loadContent(noteId: noteId)
     }
 
     @discardableResult
     func saveNoteContent(noteId: UUID, content: String) -> URL? {
-        var notes = loadNotes()
-        guard let i = notes.firstIndex(where: { $0.id == noteId }) else {
-            DebugLog.log("saveNoteContent: noteId not found: \(noteId)")
-            return nil
-        }
-        let note = notes[i]
-        let url = noteURL(noteId: noteId, format: note.format)
-        ensureNoteFileExists(note)
+        let ok = store.saveContent(noteId: noteId, content: content)
+        return ok ? AppPaths.appSupportDir.appendingPathComponent("notes.sqlite") : nil
+    }
 
-        do {
-            try content.data(using: .utf8)?.write(to: url, options: [.atomic])
-            DebugLog.log("saveNoteContent wrote \(content.utf8.count) bytes -> \(url.path)")
-        } catch {
-            DebugLog.log("saveNoteContent write failed -> \(url.path): \(error)")
-            return nil
+    // MARK: - Legacy Migration (notes.json + per-note files)
+
+    private func migrateFromLegacyFilesIfNeeded(into sqliteStore: SQLiteNotesStore) {
+        // If there are already notes in the DB, don't migrate.
+        if !sqliteStore.fetchNotes().isEmpty { return }
+
+        let legacyIndexURL = AppPaths.notesIndexURL
+        guard let data = try? Data(contentsOf: legacyIndexURL),
+              let index = try? JSONDecoder().decode(NotesIndex.self, from: data),
+              !index.notes.isEmpty else {
+            return
         }
 
-        notes[i].updatedAt = Date()
-        saveIndex(notes)
-        return url
+        DebugLog.log("Migrating legacy notes from \(legacyIndexURL.path) -> SQLite")
+
+        for note in index.notes {
+            let content = loadLegacyNoteFile(noteId: note.id, format: note.format)
+            // Insert with original timestamps.
+            insertMigrated(note: note, content: content, into: sqliteStore)
+        }
+    }
+
+    private func loadLegacyNoteFile(noteId: UUID, format: NoteFormat) -> String {
+        let ext = (format == .richText) ? "rtf" : "md"
+        let url = AppPaths.notesDir.appendingPathComponent(noteId.uuidString + "." + ext)
+        guard let data = try? Data(contentsOf: url) else { return "" }
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    private func insertMigrated(note: Note, content: String, into sqliteStore: SQLiteNotesStore) {
+        sqliteStore.upsert(note: note, content: content)
     }
 
     // MARK: - Helpers
-
-    private func saveIndex(_ notes: [Note]) {
-        // Keep the on-disk index sorted by last-updated so other consumers (and humans)
-        // see the same ordering as the UI.
-        let sorted = notes.sorted(by: { $0.updatedAt > $1.updatedAt })
-        let index = NotesIndex(notes: sorted)
-        guard let data = try? encoder.encode(index) else { return }
-        try? data.write(to: AppPaths.notesIndexURL, options: [.atomic])
-    }
-
-    private func noteURL(noteId: UUID, format: NoteFormat) -> URL {
-        let ext = (format == .richText) ? "rtf" : "md"
-        return AppPaths.notesDir.appendingPathComponent(noteId.uuidString + "." + ext)
-    }
-
-    private func ensureNoteFileExists(_ note: Note) {
-        let fm = FileManager.default
-        let url = noteURL(noteId: note.id, format: note.format)
-        if fm.fileExists(atPath: url.path) { return }
-        let header = "# " + note.title + "\n\n"
-        try? header.data(using: .utf8)?.write(to: url, options: [.atomic])
-    }
 
     private func formatEntry(_ content: String) -> String {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
