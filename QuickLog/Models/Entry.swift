@@ -44,12 +44,35 @@ struct Entry: Identifiable, Codable, Equatable {
     let createdAt: Date
     let target: EntryTarget
     let preview: String
+    let content: String
 
-    init(id: UUID = UUID(), createdAt: Date = Date(), target: EntryTarget, preview: String) {
+    // Backward compatible decoding (older entries may not have `content`).
+    private enum CodingKeys: String, CodingKey { case id, createdAt, target, preview, content }
+
+    init(id: UUID = UUID(), createdAt: Date = Date(), target: EntryTarget, preview: String, content: String) {
         self.id = id
         self.createdAt = createdAt
         self.target = target
         self.preview = preview
+        self.content = content
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        target = try c.decode(EntryTarget.self, forKey: .target)
+        preview = try c.decode(String.self, forKey: .preview)
+        content = try c.decodeIfPresent(String.self, forKey: .content) ?? preview
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(target, forKey: .target)
+        try c.encode(preview, forKey: .preview)
+        try c.encode(content, forKey: .content)
     }
 }
 

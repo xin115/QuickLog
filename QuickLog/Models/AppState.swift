@@ -212,7 +212,7 @@ final class AppState: ObservableObject {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let preview = String(trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first ?? "")
-        let entry = Entry(target: target, preview: preview)
+        let entry = Entry(target: target, preview: preview, content: trimmed)
         entriesService.addEntry(entry)
         loadEntries()
     }
@@ -238,6 +238,15 @@ final class AppState: ObservableObject {
     func deleteEntry(_ id: UUID) {
         entriesService.deleteEntry(id)
         loadEntries()
+    }
+
+    func openEntryForEditing(_ id: UUID) {
+        guard let entry = entries.first(where: { $0.id == id }) else { return }
+        editorContext = .draft
+        selectedNoteId = nil
+        draftContent = entry.content
+        lastAutosaveContent = draftContent
+        saveDraft()
     }
 
     func selectNote(_ noteId: UUID?) {
