@@ -50,7 +50,8 @@ struct NotesListView: View {
                         .fill(.white.opacity(0.08))
                         .frame(height: 1)
 
-                    ForEach(appState.notes) { note in
+                    let sortedNotes = appState.notes.sorted(by: { $0.updatedAt > $1.updatedAt })
+                    ForEach(sortedNotes) { note in
                         Button {
                             appState.openNoteForEditing(noteId: note.id)
                         } label: {
