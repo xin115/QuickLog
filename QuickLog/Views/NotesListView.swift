@@ -28,25 +28,37 @@ struct NotesListView: View {
             }
 
             List(selection: $appState.selectedNoteId) {
-                Text("Today's Log")
-                    .tag(UUID?.none)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Today's Log")
+                    if let dt = appState.todaysLogUpdatedAt {
+                        Text(DateFormatters.relative.localizedString(for: dt, relativeTo: Date()))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .tag(UUID?.none)
 
                 ForEach(appState.notes) { note in
-                    Text(note.title)
-                        .tag(Optional(note.id))
-                        .contextMenu {
-                            Button("Rename") {
-                                editingNoteId = note.id
-                                newTitle = note.title
-                                showingCreate = true
-                            }
-
-                            Button(role: .destructive) {
-                                appState.deleteNote(noteId: note.id)
-                            } label: {
-                                Text("Delete")
-                            }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(note.title)
+                        Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .tag(Optional(note.id))
+                    .contextMenu {
+                        Button("Rename") {
+                            editingNoteId = note.id
+                            newTitle = note.title
+                            showingCreate = true
                         }
+
+                        Button(role: .destructive) {
+                            appState.deleteNote(noteId: note.id)
+                        } label: {
+                            Text("Delete")
+                        }
+                    }
                 }
             }
             .listStyle(.plain)

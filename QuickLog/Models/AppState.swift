@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
     @Published var editorMode: EditorMode = .markdown
     @Published var showMarkdownPreview: Bool = false
     @Published var settings: AppSettings = AppSettings()
+    @Published var todaysLogUpdatedAt: Date? = nil
 
     let clipboardWatcher: ClipboardWatcher
     private let notesService: NotesService
@@ -121,6 +122,7 @@ final class AppState: ObservableObject {
 
     private func appendToTodaysLog() {
         notesService.appendToTodaysLog(content: draftContent)
+        todaysLogUpdatedAt = Date()
     }
 
     func createNote(title: String) {
