@@ -6,6 +6,9 @@ final class AppState: ObservableObject {
     @Published var clipboardHistory: [ClipboardItem] = []
     @Published var notes: [Note] = []
     @Published var selectedNoteId: UUID?
+
+    // Editor
+    @Published var editorContext: EditorContext = .draft
     @Published var draftContent: String = ""
     @Published var editorMode: EditorMode = .markdown
     @Published var showMarkdownPreview: Bool = false
@@ -19,6 +22,7 @@ final class AppState: ObservableObject {
     private let draftService: DraftService
     private let entriesService: EntriesService
     private var draftAutosaveTimer: Timer?
+    private var lastAutosaveContent: String = ""
 
     init() {
         self.clipboardWatcher = ClipboardWatcher()
@@ -36,11 +40,17 @@ final class AppState: ObservableObject {
         }
 
         setupDraftAutosave()
+
+        // Start in draft mode.
+        editorContext = .draft
     }
 
     private func setupDraftAutosave() {
-        draftAutosaveTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
-            self?.saveDraft()
+        draftAutosaveTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.autosaveIfNeeded()
+            }
         }
     }
 
@@ -81,6 +91,45 @@ final class AppState: ObservableObject {
     func saveDraft() {
         let draft = Draft(content: draftContent, editorMode: editorMode, lastModified: Date())
         draftService.saveDraft(draft)
+    }
+
+    func newDraft() {
+        // Leave any note editing context to avoid overwriting a note with blank content.
+        editorContext = .draft
+        selectedNoteId = nil
+        draftContent = ""
+        lastAutosaveContent = ""
+        saveDraft()
+    }
+
+    func openTodaysLogForEditing() {
+        editorContext = .todaysLog
+        selectedNoteId = nil
+        // For now: editing Today's Log uses the persisted draft as the scratchpad,
+        // and writing happens via append model elsewhere.
+    }
+
+    func openNoteForEditing(noteId: UUID) {
+        editorContext = .note(id: noteId)
+        selectedNoteId = noteId
+        draftContent = notesService.loadNoteContent(noteId: noteId)
+        lastAutosaveContent = draftContent
+    }
+
+    private func autosaveIfNeeded() {
+        guard draftContent != lastAutosaveContent else { return }
+        lastAutosaveContent = draftContent
+
+        switch editorContext {
+        case .draft:
+            saveDraft()
+        case .todaysLog:
+            // Keep draft autosave only (no continuous appends).
+            saveDraft()
+        case .note(let id):
+            notesService.saveNoteContent(noteId: id, content: draftContent)
+            loadNotes()
+        }
     }
 
     private func addClipboardItem(_ item: ClipboardItem) {

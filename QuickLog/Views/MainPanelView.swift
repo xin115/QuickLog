@@ -37,7 +37,7 @@ struct MainPanelView: View {
                         .fill(.white.opacity(0.08))
                         .frame(width: 1)
 
-                    panelColumn { EntriesListView() }
+                    panelColumn { NotesListView() }
                         .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
                 }
             }

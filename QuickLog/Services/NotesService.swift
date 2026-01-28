@@ -77,6 +77,25 @@ final class NotesService {
         append(entry, to: url)
     }
 
+    func loadNoteContent(noteId: UUID) -> String {
+        // Notes are stored as markdown for now.
+        let url = noteURL(noteId: noteId, format: .markdown)
+        guard let data = try? Data(contentsOf: url) else { return "" }
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    func saveNoteContent(noteId: UUID, content: String) {
+        var notes = loadNotes()
+        guard let i = notes.firstIndex(where: { $0.id == noteId }) else { return }
+        let note = notes[i]
+        let url = noteURL(noteId: noteId, format: note.format)
+        ensureNoteFileExists(note)
+        try? content.data(using: .utf8)?.write(to: url, options: [.atomic])
+
+        notes[i].updatedAt = Date()
+        saveIndex(notes)
+    }
+
     // MARK: - Helpers
 
     private func saveIndex(_ notes: [Note]) {

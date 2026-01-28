@@ -27,25 +27,34 @@ struct NotesListView: View {
                 .foregroundStyle(.secondary)
             }
 
-            List(selection: $appState.selectedNoteId) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Today's Log")
-                    if let dt = appState.todaysLogUpdatedAt {
-                        Text(DateFormatters.relative.localizedString(for: dt, relativeTo: Date()))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+            List {
+                Button {
+                    appState.editorContext = .todaysLog
+                    appState.selectedNoteId = nil
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Today's Log")
+                        if let dt = appState.todaysLogUpdatedAt {
+                            Text(DateFormatters.relative.localizedString(for: dt, relativeTo: Date()))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                .tag(UUID?.none)
+                .buttonStyle(.plain)
 
                 ForEach(appState.notes) { note in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(note.title)
-                        Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                    Button {
+                        appState.openNoteForEditing(noteId: note.id)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(note.title)
+                            Text(DateFormatters.relative.localizedString(for: note.updatedAt, relativeTo: Date()))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .tag(Optional(note.id))
+                    .buttonStyle(.plain)
                     .contextMenu {
                         Button("Rename") {
                             editingNoteId = note.id

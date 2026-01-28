@@ -4,25 +4,32 @@ struct DraftEditorView: View {
     @EnvironmentObject var appState: AppState
 
     @State private var showingManageNotes = false
+    @State private var autosaveTick: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text("Draft")
+                Text(appState.editorContext.displayName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 Spacer()
 
-                Picker("Target", selection: $appState.selectedNoteId) {
-                    Text("Today's Log").tag(UUID?.none)
-                    ForEach(appState.notes) { note in
-                        Text(note.title).tag(Optional(note.id))
-                    }
+                if case .note(let id) = appState.editorContext,
+                   let note = appState.notes.first(where: { $0.id == id }) {
+                    Text(note.title)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("autosave")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .font(.caption)
+
+                Button("New") {
+                    appState.newDraft()
+                }
+                .keyboardShortcut("n", modifiers: [.command])
 
                 Button {
                     showingManageNotes = true
@@ -32,12 +39,6 @@ struct DraftEditorView: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Manage notes")
-
-                Button("Save") { appState.saveOnly() }
-                    .keyboardShortcut("s", modifiers: [.command])
-
-                Button("Next") { appState.saveAndNext() }
-                    .keyboardShortcut(.return, modifiers: [.option])
             }
 
             TextEditor(text: $appState.draftContent)
@@ -45,6 +46,10 @@ struct DraftEditorView: View {
                 .padding(6)
                 .background(.clear)
                 .scrollContentBackground(.hidden)
+                .onChange(of: appState.draftContent) { _ in
+                    // (Optional) view tick, compatible with older macOS.
+                    autosaveTick &+= 1
+                }
 
             HStack {
                 Spacer()
