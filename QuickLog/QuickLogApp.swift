@@ -66,11 +66,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var scrollMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupMainMenu()
         setupStatusBarItem()
         setupPopoverWindow()
         setupUnclutterGesture()
         appState.clipboardWatcher.startWatching()
         appState.loadDraft()
+    }
+
+    private func setupMainMenu() {
+        // Accessory apps often have no default menu, which can break standard
+        // Cmd+C / Cmd+V / Cmd+X / Cmd+A because these shortcuts are usually
+        // provided via menu item key equivalents.
+        let main = NSMenu()
+
+        // App menu (minimal)
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Quit QuickLog", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenuItem.submenu = appMenu
+        main.addItem(appMenuItem)
+
+        // Edit menu with standard pasteboard actions
+        let editMenuItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+
+        editMenu.addItem(NSMenuItem.separator())
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+
+        editMenuItem.submenu = editMenu
+        main.addItem(editMenuItem)
+
+        NSApp.mainMenu = main
     }
 
     func applicationWillTerminate(_ notification: Notification) {
