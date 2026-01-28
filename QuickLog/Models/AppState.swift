@@ -77,7 +77,7 @@ final class AppState: ObservableObject {
     }
 
     func loadNotes() {
-        notes = notesService.loadNotes()
+        notes = notesService.loadNotes().sorted(by: { $0.updatedAt > $1.updatedAt })
     }
 
     func loadEntries() {
@@ -243,8 +243,9 @@ final class AppState: ObservableObject {
     }
 
     func createNote(title: String) {
-        let note = notesService.createNote(title: title)
-        notes.insert(note, at: 0)
+        _ = notesService.createNote(title: title)
+        // Always reload/sort from disk to keep ordering consistent.
+        loadNotes()
     }
 
     func renameNote(noteId: UUID, newTitle: String) {
