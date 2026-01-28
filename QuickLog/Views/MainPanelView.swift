@@ -71,6 +71,12 @@ struct MainPanelView: View {
                 centerWidth = CGFloat(appState.settings.centerPanelWidth)
                 rightWidth = CGFloat(appState.settings.rightPanelWidth)
                 normalizeToFit(totalWidth: geo.size.width)
+                // Ensure the right column fills remaining space even on first render.
+                persistWidths(totalWidth: geo.size.width)
+            }
+            .onChange(of: geo.size.width) { newWidth in
+                // Keep layout filling the window when the panel/frame changes.
+                persistWidths(totalWidth: newWidth)
             }
             .background(.ultraThinMaterial)
         }
