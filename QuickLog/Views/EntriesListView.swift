@@ -64,9 +64,20 @@ struct EntriesListView: View {
                                 ZStack {
                                     if isCurrent {
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .fill(.white.opacity(0.14))
+                                            .fill(Color.accentColor.opacity(0.18))
+
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .stroke(.white.opacity(0.22), lineWidth: 1)
+                                            .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+
+                                        // Left indicator bar (extra obvious)
+                                        HStack {
+                                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                                .fill(Color.accentColor.opacity(0.9))
+                                                .frame(width: 3)
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 4)
+                                        .padding(.leading, 2)
                                     }
                                 }
                             )
