@@ -27,6 +27,8 @@ struct EntriesListView: View {
                     }()
 
                     ForEach(visibleEntries) { entry in
+                        let isCurrent = (appState.pendingEntry?.id == entry.id) || (appState.editorContext == .entry(id: entry.id))
+
                         Button {
                             appState.openEntryForEditing(entry.id)
                         } label: {
@@ -56,8 +58,10 @@ struct EntriesListView: View {
                                 .font(.caption2)
                             }
                             .padding(.vertical, 6)
-                            .padding(.horizontal, 2)
+                            .padding(.horizontal, 8)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(isCurrent ? .white.opacity(0.08) : .clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
