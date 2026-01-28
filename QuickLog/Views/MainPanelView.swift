@@ -41,6 +41,10 @@ struct MainPanelView: View {
                     panelColumn(edge: .trailing) { EntriesListView() }
                         .frame(width: clamp(rightWidth, min: 220, max: geo.size.width - 520))
                 }
+                // IMPORTANT: without this, the HStack will shrink to its content width
+                // and end up centered inside the full-width panel, making left/right
+                // columns look "pulled in".
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .topLeading) {
                     if DebugLog.enabled {
                         let used = leftWidth + centerWidth + rightWidth + (Splitter.width * 2) + Self.dividerWidth
@@ -56,11 +60,12 @@ struct MainPanelView: View {
                 }
                 .overlay {
                     if DebugLog.enabled {
-                        RoundedRectangle(cornerRadius: 0)
+                        Rectangle()
                             .stroke(.red.opacity(0.35), lineWidth: 1)
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onAppear {
                 leftWidth = CGFloat(appState.settings.leftPanelWidth)
                 centerWidth = CGFloat(appState.settings.centerPanelWidth)
