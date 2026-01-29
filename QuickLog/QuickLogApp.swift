@@ -264,10 +264,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scrollMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.scrollWheel]) { [weak self] event in
             guard let self = self else { return }
 
-            // Prefer trackpad-like gestures (two-finger scroll). Mouse wheel also works,
-            // but this helps avoid accidental triggers.
-            guard event.hasPreciseScrollingDeltas else { return }
-
             let mouse = NSEvent.mouseLocation
             guard let screen = NSScreen.main else { return }
 
@@ -275,6 +271,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let menuBarHeight = max(0, screen.frame.maxY - screen.visibleFrame.maxY)
             let menuBarBottomY = screen.frame.maxY - menuBarHeight
             let inMenuBar = mouse.y >= (menuBarBottomY - 1)
+
+            if DebugLog.enabled {
+                DebugLog.log("scrollWheel dy=\(event.scrollingDeltaY) precise=\(event.hasPreciseScrollingDeltas) mouseY=\(mouse.y) menuBarBottomY=\(menuBarBottomY) inMenuBar=\(inMenuBar) visible=\(self.popoverWindow?.isVisible == true)")
+            }
+
+            // Only trigger when cursor is in the menu bar area.
             guard inMenuBar else { return }
 
             // Ignore tiny deltas.
