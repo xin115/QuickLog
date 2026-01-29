@@ -55,6 +55,42 @@ The goal is to make “copy → open panel → paste/type → save” frictionle
 
 ---
 
+## Permissions / Authorization
+
+### Main app (QuickLogMVP)
+- Should work without Accessibility permission.
+- Uses a **global scroll monitor** for the top-bar gesture (menu bar area).
+
+### UI Automation Agent (for full-auto UI tests)
+This repo includes a small **GUI helper app** used for automated UI smoke tests:
+
+- `tools/QuickLogAutomationAgent.app`
+- `tools/QuickLogAutomationAgentSwift.app`
+
+Why: macOS UI automation permissions are granted **per GUI app**. Headless runners cannot be granted Accessibility.
+So the agent is a stay-open GUI app that performs UI clicks on demand.
+
+**One-time setup**
+1. Open the agent app from `tools/`.
+2. When prompted, allow:
+   - **Accessibility** (required)
+   - **Automation** → allow controlling **System Events** (required)
+3. Keep the agent running (optional: add to Login Items).
+
+**Trigger a UI smoke test**
+Write the project path to:
+```bash
+printf %s "/Users/smile/Documents/coding/happy/QuickLog" > /tmp/QuickLogAutomationAgent.cmd
+```
+Then read the result:
+```bash
+cat /tmp/QuickLogAutomationAgent.result.json
+```
+
+More details: `tools/README_AUTOMATION.md`
+
+---
+
 ## Build & Run
 
 ### Requirements
@@ -107,6 +143,14 @@ The app is a SwiftPM executable target under `QuickLog/`:
   - `Entry.swift` — saved history model
   - `ClipboardItem.swift` / `ClipboardContent.swift` — clipboard model (text/image)
   - `EditorContext.swift` — editor mode (draft/today/history)
+
+---
+
+## License
+
+No license file has been added yet.
+If you want this to be open-source, pick a license (MIT / Apache-2.0 / GPL-3.0 etc.) and I’ll add `LICENSE`.
+If you want it private/proprietary, we can add a short proprietary notice instead.
 
 ---
 
