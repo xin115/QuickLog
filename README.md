@@ -148,9 +148,7 @@ The app is a SwiftPM executable target under `QuickLog/`:
 
 ## License
 
-No license file has been added yet.
-If you want this to be open-source, pick a license (MIT / Apache-2.0 / GPL-3.0 etc.) and I’ll add `LICENSE`.
-If you want it private/proprietary, we can add a short proprietary notice instead.
+Apache-2.0 (see [`LICENSE`](./LICENSE)).
 
 ---
 
