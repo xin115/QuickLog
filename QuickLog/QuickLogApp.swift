@@ -283,22 +283,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let rawDy = event.scrollingDeltaY
             guard abs(rawDy) > 2 else { return }
 
-            // Normalize to "finger direction": with Natural Scrolling enabled,
-            // scrollingDeltaY sign is inverted from the physical gesture.
-            // We want: finger up => show, finger down => hide.
-            let fingerDy = event.isDirectionInvertedFromDevice ? -rawDy : rawDy
-
-            if DebugLog.enabled {
-                DebugLog.log("scrollWheel rawDy=\(rawDy) fingerDy=\(fingerDy) inverted=\(event.isDirectionInvertedFromDevice)")
-            }
-
-            if fingerDy > 0 {
-                // Finger up => show
+            // Empirically on this system: positive deltaY corresponds to the "show" gesture.
+            // (Natural scrolling / devices can make theoretical mappings confusing; keep it simple.)
+            if rawDy > 0 {
+                // show
                 if self.popoverWindow?.isVisible != true {
                     self.showPanel()
                 }
             } else {
-                // Finger down => hide
+                // hide
                 if self.popoverWindow?.isVisible == true {
                     self.hidePanel()
                 }
