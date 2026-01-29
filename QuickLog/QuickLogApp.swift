@@ -280,15 +280,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard inMenuBar else { return }
 
             // Ignore tiny deltas.
-            let dy = event.scrollingDeltaY
-            guard abs(dy) > 2 else { return }
+            let rawDy = event.scrollingDeltaY
+            guard abs(rawDy) > 2 else { return }
 
-            // Down (negative) => show; Up (positive) => hide.
-            if dy < 0 {
+            // Normalize to "finger direction": with Natural Scrolling enabled,
+            // scrollingDeltaY sign is inverted from the physical gesture.
+            // We want: finger up => show, finger down => hide.
+            let fingerDy = event.isDirectionInvertedFromDevice ? -rawDy : rawDy
+
+            if DebugLog.enabled {
+                DebugLog.log("scrollWheel rawDy=\(rawDy) fingerDy=\(fingerDy) inverted=\(event.isDirectionInvertedFromDevice)")
+            }
+
+            if fingerDy > 0 {
+                // Finger up => show
                 if self.popoverWindow?.isVisible != true {
                     self.showPanel()
                 }
             } else {
+                // Finger down => hide
                 if self.popoverWindow?.isVisible == true {
                     self.hidePanel()
                 }
