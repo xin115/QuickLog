@@ -272,10 +272,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let menuBarBottomY = screen.frame.maxY - menuBarHeight
             let inMenuBar = mouse.y >= (menuBarBottomY - 1)
 
-            if DebugLog.enabled {
-                DebugLog.log("scrollWheel dy=\(event.scrollingDeltaY) precise=\(event.hasPreciseScrollingDeltas) mouseY=\(mouse.y) menuBarBottomY=\(menuBarBottomY) inMenuBar=\(inMenuBar) visible=\(self.popoverWindow?.isVisible == true)")
-            }
-
             // Only trigger when cursor is in the menu bar area.
             guard inMenuBar else { return }
 
